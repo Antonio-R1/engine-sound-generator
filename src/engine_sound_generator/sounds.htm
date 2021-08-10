@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset=utf-8>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Sounds</title>
+
+<style>
+
+canvas {
+   display: block;
+}
+
+#canvas {
+   margin: 0 auto;
+}
+
+</style>
+
+<script type="module">
+import * as THREE from '../three_js/build/three.module.js';
+import {SoundGenerator, GeneratedPositionalAudio, SoundSineWave} from './sound_generator.js';
+import {SoundEngine} from './engine_sound_generator.js';
+import Engine from '../engine.js';
+
+function moduleInit() {
+   scene = new THREE.Scene();
+   canvas = document.getElementById ("canvas");
+   renderer = new THREE.WebGLRenderer({canvas: canvas, antialias: true});
+   camera = new THREE.PerspectiveCamera(75, canvas.width/canvas.height, 0.1, 1000);
+   camera.position.x = 0;
+   camera.position.y = 5;
+   camera.position.z = 15;
+
+   listener = new THREE.AudioListener();
+   soundGenerator = new SoundGenerator(listener);
+   camera.add (listener);
+   scene.add(camera);
+
+   renderer.setClearColor(0x0000ff, 1);
+
+   var ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+   scene.add(ambientLight);
+
+   var directionalLight = new THREE.DirectionalLight(0xffffff, 5.0);
+   directionalLight.position.x = 1000;
+   directionalLight.position.y = 1000;
+   scene.add(directionalLight);
+
+   cube = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 5), new THREE.MeshPhysicalMaterial({color: 0x007500}));
+   cube.position.y = 0;
+   scene.add(cube);
+
+   soundSineWave = new SoundSineWave(listener);
+   engine = new Engine ();
+   soundCarEngine = new SoundEngine({listener: listener, cylinderCount: 4});
+   this.soundGenerator.add(soundSineWave);
+   this.soundGenerator.add(soundCarEngine);
+   cube.add(soundSineWave);
+   cube.add(soundCarEngine);
+   audioContext = listener.context;
+
+   audioAnalyser = audioContext.createAnalyser();
+   audioAnalyser.fftSize = 2048;
+   soundSineWave.gain.connect(audioAnalyser);
+   soundCarEngine.gain.connect(audioAnalyser);
+   audioAnalyserBuffer = new Uint8Array(audioAnalyser.frequencyBinCount);
+
+//   canvasOscilloscope = document.getElementById ("canvas_oscilloscope");
+//   canvasOscilloscope.style.width = "100%";
+//   canvasOscilloscope.style.height = canvasAudioAnalyseHeight+"px";
+//   canvasOscilloscope.width = canvasAudioAnalyseWidth;
+//   canvasOscilloscope.height = canvasAudioAnalyseHeight;
+//   canvasOscilloscopeContext = canvasOscilloscope.getContext("2d");
+//   canvasOscilloscopeContext.fillStyle = "black";
+//   canvasOscilloscopeContext.rect (0, 0, canvasOscilloscope.width, canvasOscilloscope.height);
+//   canvasOscilloscopeContext.fill ();
+//   canvasOscilloscopeContext.strokeStyle = "green";
+
+   canvasSpectogram = document.getElementById ("canvas_spectogram");
+   canvasSpectogram.style.width = "100%";
+   canvasSpectogram.style.height = canvasAudioAnalyseHeight+"px";
+   canvasSpectogram.width = canvasAudioAnalyseWidth;
+   canvasSpectogram.height = 2*canvasAudioAnalyseHeight;
+   canvasSpectogramContext = canvasSpectogram.getContext("2d");
+   canvasSpectogramContext.fillStyle = "black";
+   canvasSpectogramContext.rect (0, 0, canvasSpectogram.width, canvasSpectogram.height);
+   canvasSpectogramContext.fill ();
+
+   lastTimeAnimate = window.performance.now();
+
+   animate ();
+}
+
+var lastTimeAnimate;
+
+function animate () {
+
+   var time = window.performance.now();
+   var dt = time-lastTimeAnimate;
+
+   renderer.render(scene, camera);
+   requestAnimationFrame(animate);
+
+   soundCarEngine.rpm = engine.rpm;
+   engine.update (0.001*dt);
+
+   updateCanvasSpectogram ();
+
+   lastTimeAnimate = time;
+}
+
+//var index = 0;
+//var canvasOscilloscopeValueY = 0;
+
+function updateCanvasOscilloscope (stream) {
+
+//   var pixelsToMoveLeft = canvasOscilloscope.width*dt/5000.0;
+   var pixelsToMoveLeft = 20;
+//   audioAnalyser.getFloatTimeDomainData(audioAnalyserBuffer);
+
+   let audioAnalyserBufferByte = new Uint8Array(audioAnalyser.frequencyBinCount);
+   audioAnalyser.getByteTimeDomainData(audioAnalyserBufferByte);
+
+   var imageData = canvasOscilloscopeContext.getImageData(pixelsToMoveLeft, 0, canvasOscilloscope.width-pixelsToMoveLeft, canvasOscilloscope.height);
+   canvasOscilloscopeContext.putImageData(imageData, 0, 0);
+   canvasOscilloscopeContext.rect(canvasOscilloscope.width-pixelsToMoveLeft, 0, pixelsToMoveLeft, canvasOscilloscope.height);
+   canvasOscilloscopeContext.fill();
+
+   canvasOscilloscopeContext.beginPath();
+   canvasOscilloscopeContext.moveTo(canvasOscilloscope.width-pixelsToMoveLeft, canvasOscilloscopeValueY);
+
+   for (let i=0; i<pixelsToMoveLeft; i++) {
+      let amplitude = Math.sin(2*Math.PI*index/1000*canvasOscilloscope.width/5000)*0+audioAnalyserBuffer[i*Math.floor(audioAnalyserBuffer.length/pixelsToMoveLeft)];
+
+      canvasOscilloscopeValueY = Math.floor(canvasOscilloscope.height/2)+1+(canvasOscilloscope.height-2)/2*amplitude;
+      canvasOscilloscopeContext.lineTo(canvasOscilloscope.width-pixelsToMoveLeft+i+1, canvasOscilloscopeValueY);
+   }
+   canvasOscilloscopeContext.stroke();
+}
+
+/*
+ * sets the color of the pixel at the x- and y-coordinate passed as arguments
+ * on imageData
+ */
+function setPixel(imageData, width, height, x, y, r, g, b) {
+   var index = (y*width+x)*4;
+   imageData.data[index] = r;
+   imageData.data[index+1] = g;
+   imageData.data[index+2] = b;
+}
+
+/*
+ * moves the image on the canvas for the spectogram on pixel to the left and
+ * writes the current frequency domain data on the pixels on the right
+ */
+function updateCanvasSpectogram () {
+
+   var pixelsToMoveLeft = 1;
+   audioAnalyser.getByteFrequencyData(audioAnalyserBuffer);
+
+   var imageData = canvasSpectogramContext.getImageData(pixelsToMoveLeft, 0, canvasSpectogram.width-pixelsToMoveLeft, canvasSpectogram.height);
+   canvasSpectogramContext.putImageData(imageData, 0, 0);
+
+   var imageData = canvasSpectogramContext.getImageData(0, 0, canvasSpectogram.width, canvasSpectogram.height);
+
+   let width = canvasSpectogram.width;
+   let height = canvasSpectogram.height;
+
+   for (let i=0; i<height; i++) {
+      setPixel(imageData, width, height, width-1, height-i, 0, audioAnalyserBuffer[i], 0);
+   }
+
+   canvasSpectogramContext.putImageData(imageData, 0, 0);
+
+}
+
+var lastTimeCanvasAnalyseUpdate;
+
+function playSound() {
+   soundGenerator.updateSounds(0.025);
+   let time = window.performance.now ();
+//   let dt = time-lastTimeCanvasAnalyseUpdate;
+//   if (dt >= 1000*0.025 || 1) {
+//      updateCanvasOscilloscope (dt);
+//      updateCanvasSpectogram (dt);
+//      lastTimeCanvasAnalyseUpdate = time;
+//   }
+   labelCarEngineRpm.innerHTML = engine.rpm;
+   window.setTimeout(playSound, 25);
+}
+
+var soundStarted = false;
+
+function startSoundGenerator() {
+   if (soundStarted) {
+      return;
+   }
+   lastTimeCanvasAnalyseUpdate = window.performance.now();
+//   canvasOscilloscopeValueY = Math.floor(canvasOscilloscope.height/2)+1;
+   playSound();
+   soundStarted = true;
+}
+
+function playSoundSineWave() {
+
+   soundSineWave.play();
+   startSoundGenerator();
+}
+
+function playSoundCarEngine() {
+   soundCarEngine.play();
+   startSoundGenerator();
+}
+
+window.moduleInit = moduleInit;
+window.playSoundSineWave = playSoundSineWave;
+window.playSoundCarEngine = playSoundCarEngine;
+
+</script>
+
+<script>
+
+var scene;
+var canvas;
+var canvasAudioAnalyseWidth = 2000;
+//var canvasAudioAnalyseHeight = 125;
+var canvasAudioAnalyseHeight = 250;
+//var canvasOscilloscope;
+//var canvasOscilloscopeContext;
+var canvasSpectogram;
+var canvasSpectogramContext;
+var renderer;
+var camera;
+var cube;
+var listener;
+var soundGenerator;
+var soundSineWave;
+var engine;
+var soundCarEngine;
+
+var audioContext;
+var audioAnalyser;
+var audioAnalyserBuffer;
+
+var labelSineWaveVolume;
+var inputSineWaveFrequency;
+var labelSineWaveFrequency;
+
+var labelCarEngineVolume;
+var labelCarEngineRpm;
+var labelCarEngineThrottle;
+
+function init () {
+
+   let inputObjectPosition = document.getElementById("input_object_position");
+   input_object_position.addEventListener("input", (event) => cube.position.x = event.target.value);
+
+   // input event listener for the sine wave sound
+   let inputSineWaveVolume = document.getElementById("input_sine_wave_volume");
+   inputSineWaveVolume.addEventListener("input", updateSineWaveVolume);
+   labelSineWaveVolume = document.getElementById("label_sine_wave_volume");
+   labelSineWaveVolume.innerHTML = "Volume "+inputSineWaveVolume.value+" %";
+
+   inputSineWaveFrequency = document.getElementById("input_sine_wave_frequency");
+   inputSineWaveFrequency.addEventListener("input", updateSineWaveFrequency);
+   labelSineWaveFrequency = document.getElementById("label_sine_wave_frequency");
+   labelSineWaveFrequency.innerHTML = "Frequency  "+inputSineWaveFrequency.value+" Hz";
+
+   // input event listener for the car engine sound
+   let inputCarEngineVolume = document.getElementById("input_car_engine_volume");
+   inputCarEngineVolume.addEventListener("input", updateCarEngineVolume);
+   labelCarEngineVolume = document.getElementById("label_car_engine_volume");
+   labelCarEngineVolume.innerHTML = "Volume "+inputCarEngineVolume.value+" %";
+
+   let inputCarEngineThrottle = document.getElementById("input_car_engine_throttle");
+   inputCarEngineThrottle.addEventListener("input", updateCarEngineThrottle);
+   labelCarEngineThrottle = document.getElementById("label_car_engine_throttle");
+   labelCarEngineThrottle.innerHTML = "Throttle  "+inputCarEngineThrottle.value+" %";
+
+   labelCarEngineRpm = document.getElementById("span_car_engine_rpm");
+
+   window.moduleInit();
+   let gainNode = soundSineWave.gain;
+   gainNode.gain.value = 0.01*inputSineWaveVolume.value;
+
+   gainNode = soundCarEngine.gain;
+   gainNode.gain.value = 0.01*inputCarEngineVolume.value
+}
+
+function updateSineWaveVolume (event) {
+   labelSineWaveVolume.innerHTML = "Volume "+event.target.value+" %";
+   let gainNode = soundSineWave.gain;
+   gainNode.gain.value = 0.01*event.target.value;
+}
+
+function updateSineWaveFrequency (event) {
+   labelSineWaveFrequency.innerHTML = "Frequency "+event.target.value+" Hz";
+   soundSineWave.frequency = event.target.value;
+}
+
+async function togglePlaySineWaveSound (button) {
+   await audioContext.resume();
+   if (button.value==="play") {
+      button.value = "stop";
+      playSoundSineWave ();
+      return;
+   }
+   button.value = "play";
+   soundSineWave.stop();
+}
+
+function updateCarEngineVolume (event) {
+   labelCarEngineVolume.innerHTML = "Volume "+event.target.value+" %";
+   let gainNode = soundCarEngine.gain;
+   gainNode.gain.value = 0.01*event.target.value;
+}
+
+function updateCarEngineThrottle (event) {
+   labelCarEngineThrottle.innerHTML = "Throttle "+event.target.value+" %";
+   engine.throttle = 0.01*event.target.value;
+   soundCarEngine.throttle = engine.throttle;
+}
+
+async function togglePlayCarEngineSound (button) {
+   await audioContext.resume();
+   if (button.value==="play") {
+      engine.start ();
+      button.value = "stop";
+      playSoundCarEngine ();
+      return;
+   }
+   engine.starting = false;
+   engine.started = false;
+   button.value = "play";
+   soundCarEngine.stop();
+}
+
+</script>
+
+</head>
+
+<body onload="init()">
+
+<fieldset>
+<legend>Object</legend>
+<input type="range" id="input_object_position" name="input_object_position" min="-25" max="25" step="0.01" value="0"> <label for="input_object_position" id="label_object_position">Position</label>
+</fieldset>
+<fieldset>
+<legend>Sine wave</legend>
+
+<input type="range" id="input_sine_wave_volume" name="input_sine_wave_volume" min="0" max="100" value="10"> <label for="input_sine_wave_volume" id="label_sine_wave_volume">Volume</label>
+<input type="range" id="input_sine_wave_frequency" name="input_sine_wave_frequency" min="20" max="20000" value="440"> <label for="input_sine_wave_frequency" id="label_sine_wave_frequency">Frequency</label>
+<input type="button" id="button_play_sine_wave_sound" onclick="togglePlaySineWaveSound(this)" value="play"></input>
+
+</fieldset>
+
+<fieldset>
+<legend>Car engine</legend>
+
+<input type="range" id="input_car_engine_volume" name="input_car_engine_volume" min="0" max="100" value="10"> <label for="input_car_engine_volume" id="label_car_engine_volume">Volume</label>
+<input type="range" id="input_car_engine_throttle" name="input_car_engine_throttle" min="0" max="100" value="0"> <label for="input_car_engine_throttle" id="label_car_engine_throttle">Throttle</label>
+<input type="button" id="button_car_engine_sound" onclick="togglePlayCarEngineSound(this)" value="play"></input>
+Rpm: <span id="span_car_engine_rpm">0</span>
+
+</fieldset>
+
+<canvas id="canvas" style="display: block;" height="350px" width="750px"></canvas>
+<!--
+<canvas id="canvas_oscilloscope" height="125px" width="100%"></canvas>
+--!>
+<canvas id="canvas_spectogram" height="250px" width="100%"></canvas>
+
+
+</body>
+</html>
