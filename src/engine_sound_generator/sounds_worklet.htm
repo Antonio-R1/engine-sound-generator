@@ -307,7 +307,7 @@ function updateSineWaveVolume (event) {
 
 function updateSineWaveFrequency (event) {
    labelSineWaveFrequency.innerHTML = "Frequency "+event.target.value+" Hz";
-   let frequencyParam = soundSineWave.source.parameters.get('frequency');
+   let frequencyParam = soundSineWave.worklet.parameters.get('frequency');
    frequencyParam.value = event.target.value;
    soundSineWave.frequency = event.target.value;
 }
