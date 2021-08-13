@@ -1,7 +1,7 @@
 # Engine Sound Generator
 an engine sound generator written in JavaScript using the Web Audio API
 
-My attempts to implemente an engine sound generator based on the ideas from [this paper](https://www.researchgate.net/publication/280086598_Physically_informed_car_engine_sound_synthesis_for_virtual_and_augmented_environments) [[1]](#1)
+My attempts to implement an engine sound generator based on the ideas from [this paper](https://www.researchgate.net/publication/280086598_Physically_informed_car_engine_sound_synthesis_for_virtual_and_augmented_environments) [[1]](#1)
 and by using Three.js and the Web Audio API.
 
 The Doppler effect is also implemented by using DelayNodes and setting the value of `delayTime`.
@@ -20,7 +20,7 @@ and also the algorithm for the Doppler effect has been improved compared to the 
 
 ### Usage
 
-First the module need to be loaded:
+First the module needs to be loaded:
 
 ```javascript
    var loadingManager = new THREE.LoadingManager();
