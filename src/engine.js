@@ -72,15 +72,30 @@ class Engine {
       }
 
       if (this.rpm < this.maxRpm) {
-         this.currentPower = throttle*this.powerValues.evaluate(this.rpm);
+         let exponent = 0.5+1.5*(this.rpm-this.minRpm)/(this.maxRpm-this.minRpm);
+         let powerPercentage = Math.pow (throttle, exponent);
+         this.currentPower = powerPercentage*this.powerValues.evaluate(this.rpm);
       }
       else {
          this.currentPower = 0.0;
       }
 
-      let angularMomentum = this.rpm*this.momentOfInertia;
-      let momentOfInertiaFriction = this.engineFriction;
-      this.rpm = (angularMomentum+(this.currentPower-momentOfInertiaFriction*this.rpm)*dt)/this.momentOfInertia;
+      /*
+       * L: angular momentum
+       * I: momentum of inertia
+       * omega: angular velocity
+       * P: power
+       * M: torque
+       * L = I*omega
+       * L = M*dt
+       * M = P/omega
+       */
+      let omega = this.rpm/60.0*2*Math.PI;
+      let angularMomentum = omega*this.momentOfInertia;
+      let torqueEngine = this.currentPower/60.0*2*Math.PI
+      let torqueFriction = omega*this.engineFriction;
+      angularMomentum = angularMomentum+(torqueEngine-torqueFriction)*dt;
+      this.rpm = angularMomentum/this.momentOfInertia*60.0/(2*Math.PI);
    }
 }
 
