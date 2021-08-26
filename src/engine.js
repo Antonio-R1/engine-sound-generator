@@ -12,11 +12,10 @@ import SplineInterpolation from './spline_interpolation.js';
 class Engine {
 
    constructor ({xAxisPowerValues = null, yAxisPowerValues = null,
-                 momentOfInertia = 10.0, engineFriction = 10.0, minRpm = 750.0, maxRpm = 7500.0} = {}) {
+                 maxEngineBrakeTorque = 100, momentOfInertia = 1.0, engineFriction = 0.01, minRpm = 750.0, maxRpm = 7500.0} = {}) {
       this.rpm = 0.0;
       this.throttle = 0.0;
       this._currentThrottle = 0.0;
-      this.currentPower = 0.0;
 
       if ((xAxisPowerValues==null) !== (yAxisPowerValues==null)) {
          throw new Error('"xAxisPowerValues" and "yAxisPowerValues" need both to be supplied.');
@@ -29,6 +28,7 @@ class Engine {
 
       this.powerValues = new SplineInterpolation (xAxisPowerValues, yAxisPowerValues);
 
+      this.maxEngineBrakeTorque = maxEngineBrakeTorque;
       this.momentOfInertia = momentOfInertia;
 
       this.engineFriction = engineFriction;
@@ -62,8 +62,6 @@ class Engine {
          this.started = true;
          if (this.rpm<100.0) {
             this.rpm += 200.0*dt;
-         }
-         else if (this.rpm < 750.0) {
             throttle = 1.0;
          }
          else {
@@ -71,14 +69,15 @@ class Engine {
          }
       }
 
-      if (this.rpm < this.maxRpm) {
-         let exponent = 0.5+1.5*(this.rpm-this.minRpm)/(this.maxRpm-this.minRpm);
-         let powerPercentage = Math.pow (throttle, exponent);
-         this.currentPower = powerPercentage*this.powerValues.evaluate(this.rpm);
+      if (this.rpm > this.maxRpm) {
+         throttle = 0.0;
       }
-      else {
-         this.currentPower = 0.0;
-      }
+
+      let exponent = 0.5+1.5*(this.rpm-this.minRpm)/(this.maxRpm-this.minRpm);
+      let powerPercentage = Math.pow (throttle, exponent);
+      let omega = this.rpm/60.0*2*Math.PI;
+      let torqueEngine = powerPercentage*(this.powerValues.evaluate(this.rpm)/omega+this.maxEngineBrakeTorque)-
+                         this.maxEngineBrakeTorque;
 
       /*
        * L: angular momentum
@@ -90,10 +89,9 @@ class Engine {
        * L = M*dt
        * M = P/omega
        */
-      let omega = this.rpm/60.0*2*Math.PI;
       let angularMomentum = omega*this.momentOfInertia;
-      let torqueEngine = this.currentPower/60.0*2*Math.PI
-      let torqueFriction = omega*this.engineFriction;
+      let torqueFriction = this.engineFriction;
+
       angularMomentum = angularMomentum+(torqueEngine-torqueFriction)*dt;
       this.rpm = angularMomentum/this.momentOfInertia*60.0/(2*Math.PI);
    }
