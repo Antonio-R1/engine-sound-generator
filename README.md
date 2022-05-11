@@ -1,7 +1,7 @@
 # Engine Sound Generator
 an engine sound generator written in JavaScript using the Web Audio API
 
-My attempts to implement an engine sound generator based on the ideas from [this paper](https://www.researchgate.net/publication/280086598_Physically_informed_car_engine_sound_synthesis_for_virtual_and_augmented_environments) [[1]](#1)
+Some attempts to implement an engine sound generator based on the ideas from [this paper](https://www.researchgate.net/publication/280086598_Physically_informed_car_engine_sound_synthesis_for_virtual_and_augmented_environments) [[1]](#1)
 and by using Three.js and the Web Audio API.
 
 The Doppler effect is also implemented by using DelayNodes and setting the value of `delayTime`.
@@ -66,6 +66,13 @@ The value of the rpm paremeter can be set in the following way:
       let rpmParam = soundCarEngine.worklet.parameters.get('rpm');
       rpmParam.value = someValue;
 ```
+
+### Wasm version
+<http://antonio-r1.github.io/engine-sound-generator/src/engine_sound_generator/sounds_worklet_wasm.htm>
+The second attempt has also been ported to C++ and compiled with Emscripten to WebAssembly for making
+the sound generator more efficient and removing the glitches. It can be built by activating the environment
+variables of Emscripten and running `make` in the `sound_generator_wasm` folder.
+This version can be used like the JavaScript version as described above.
 
 ## Third party software used / References
 - [Three.js](https://github.com/mrdoob/three.js)
