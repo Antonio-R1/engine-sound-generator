@@ -56,25 +56,40 @@ class EngineSoundGenerator extends AudioWorkletProcessor {
                         processorOptions.outletWaveguideLength, processorOptions.outletReflectionFactor);
 
       this.port.onmessage = (event) => {
-         this.updateParameters (event.data)
+         let parameters = event.data;
+         this.updateParameters (parameters["cylinder_count"],
+                     parameters["intake_waveguide_length"], parameters["exhaust_waveguide_length"],
+                     parameters["extractor_waveguide_length"],
+
+                     parameters["intake_open_reflection_factor"], parameters["intake_closed_reflection_factor"],
+
+                     parameters["exhaust_open_reflection_factor"], parameters["exhaust_closed_reflection_factor"], parameters["ignition_time"],
+
+                     parameters["straight_pipe_waveguide_length"], parameters["straight_pipe_reflection_factor"],
+
+                     parameters["muffler_elements_length"], parameters["action"],
+
+                     parameters["outlet_waveguide_length"], parameters["outlet_reflection_factor"]);
       };
    }
 
-   updateParameters ({cylinderCount,
+   updateParameters (cylinderCount,
 
-                      intakeWaveguideLength, exhaustWaveguideLength,
-                      extractorWaveguideLength,
+                     intakeWaveguideLength, exhaustWaveguideLength,
+                     extractorWaveguideLength,
 
-                      intakeOpenReflectionFactor, intakeClosedReflectionFactor,
+                     intakeOpenReflectionFactor, intakeClosedReflectionFactor,
 
-                      exhaustOpenReflectionFactor, exhaustClosedReflectionFactor, ignitionTime,
+                     exhaustOpenReflectionFactor, exhaustClosedReflectionFactor, ignitionTime,
 
-                      straightPipeWaveguideLength, straightPipeReflectionFactor,
+                     straightPipeWaveguideLength, straightPipeReflectionFactor,
 
-                      mufflerElementsLength, action,
+                     mufflerElementsLength, action,
 
-                      outletWaveguideLength, outletReflectionFactor}) {
-
+                     outletWaveguideLength, outletReflectionFactor) {
+      if (!mufflerElementsLength) {
+         mufflerElementsLength = [10, 15, 20, 25];
+      }
       SoundGeneratorWasm._free(this.mufflerElementsLengthPtr);
       this.mufflerElementsLengthPtr = SoundGeneratorWasm._malloc(mufflerElementsLength.length*4);
       SoundGeneratorWasm.HEAPU32.set(mufflerElementsLength, this.mufflerElementsLengthPtr/4);

@@ -167,21 +167,21 @@ class EngineSoundGenerator extends SoundGenerator {
        exhaustWaveguideLength: 100,
        extractorWaveguideLength: 100,
 
-       intakeOpenReflectionFactor: 0.25,
+       intakeOpenReflectionFactor: 0.01,
        intakeClosedReflectionFactor: 0.95,
 
-       exhaustOpenReflectionFactor: 0.25,
+       exhaustOpenReflectionFactor: 0.01,
        exhaustClosedReflectionFactor: 0.95,
        ignitionTime: 0.016,
 
        straightPipeWaveguideLength: 128,
-       straightPipeReflectionFactor: 0.1,
+       straightPipeReflectionFactor: 0.01,
 
        mufflerElementsLength: [10, 15, 20, 25],
-       action: 0.25,
+       action: 0.1,
 
        outletWaveguideLength: 5,
-       outletReflectionFactor: 0.1}
+       outletReflectionFactor: 0.01}
    */
    setParameters (parameters) {
       this.worklet.port.postMessage(parameters);

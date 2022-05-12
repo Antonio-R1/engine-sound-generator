@@ -79,7 +79,7 @@ class Cylinder {
 
    update (intakeNoise, straightPipeOutputLeft, x) {
 
-      this.exhaustValue = this._exhaustValve(x);
+      this.exhaustValve = this._exhaustValve(x);
       this.intakeValve = this._intakeValve (x);
       this.pistonMotion = this._pistonMotion (x);
       this.fuelIgnition = this._fuelIgnition(x, this.ignitionTime);
@@ -387,11 +387,9 @@ class EngineSoundGenerator extends AudioWorkletProcessor {
 
       }
 
-       for (let i=0; i<this.chunkSize; i++) {
-          channelIntake[i] = this.intakeSound[i];
-          channelEngineBlockVibrations[i] = this.engineLowPassFilter.getFilteredValue(this.sound[i]);
-          channelOutlet[i] = this.outletSound[i];
-       }
+      for (let i=0; i<this.chunkSize; i++) {
+         channelEngineBlockVibrations[i] = this.engineLowPassFilter.getFilteredValue(this.sound[i]);
+      }
       return true;
    }
 
