@@ -4,8 +4,9 @@
 
 <meta charset=utf-8>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="An engine sound generator written in JavaScript and C++ using the Web Audio API">
 
-<title>Sounds Worklet Wasm</title>
+<title>Engine Sound Generator Worklet Wasm</title>
 
 <style>
 
@@ -15,6 +16,15 @@ canvas {
 
 #canvas {
    margin: 0 auto;
+}
+
+.div_input {
+   background: #eeeeee;
+   margin: 1px;
+   padding: 1px;
+   min-width: 425px;
+   white-space: nowrap;
+   display: inline-block;
 }
 
 </style>
@@ -97,7 +107,7 @@ function moduleInit() {
                                     action: 0.1,
 
                                     outletWaveguideLength: 5,
-                                    outletReflectionFactor: 0.01}});
+                                    outletReflectionFactor: 0.01}, clamp: true});
 
    let inputSineWaveVolume = document.getElementById("input_sine_wave_volume");
    let gainNode = soundSineWave.gain;
@@ -254,6 +264,8 @@ var labelCarEngineVolumeOutlet;
 var labelCarEngineRpm;
 var labelCarEngineThrottle;
 
+var parameters = {};
+var parameterLabels = {};
 function init () {
 
    let inputObjectPosition = document.getElementById("input_object_position");
@@ -268,7 +280,7 @@ function init () {
    inputSineWaveFrequency = document.getElementById("input_sine_wave_frequency");
    inputSineWaveFrequency.addEventListener("input", updateSineWaveFrequency);
    labelSineWaveFrequency = document.getElementById("label_sine_wave_frequency");
-   labelSineWaveFrequency.innerHTML = "Frequency  "+inputSineWaveFrequency.value+" Hz";
+   labelSineWaveFrequency.innerHTML = "Frequency "+inputSineWaveFrequency.value+" Hz";
 
    // input event listener for the car engine sound
    let inputCarEngineVolume = document.getElementById("input_car_engine_volume");
@@ -294,13 +306,45 @@ function init () {
    let inputCarEngineThrottle = document.getElementById("input_car_engine_throttle");
    inputCarEngineThrottle.addEventListener("input", updateCarEngineThrottle);
    labelCarEngineThrottle = document.getElementById("label_car_engine_throttle");
-   labelCarEngineThrottle.innerHTML = "Throttle  "+inputCarEngineThrottle.value+" %";
+   labelCarEngineThrottle.innerHTML = "Throttle "+inputCarEngineThrottle.value+" %";
 
    labelCarEngineRpm = document.getElementById("span_car_engine_rpm");
+
+   addInputEventListenerAndGetLabel ("cylinder_count", updateParameter);
+   addInputEventListenerAndGetLabel ("intake_waveguide_length", updateParameter);
+   addInputEventListenerAndGetLabel ("exhaust_waveguide_length", updateParameter);
+   addInputEventListenerAndGetLabel ("extractor_waveguide_length", updateParameter);
+   addInputEventListenerAndGetLabel ("intake_open_reflection_factor", updateParameter);
+   addInputEventListenerAndGetLabel ("intake_closed_reflection_factor", updateParameter);
+   addInputEventListenerAndGetLabel ("exhaust_open_reflection_factor", updateParameter);
+   addInputEventListenerAndGetLabel ("exhaust_closed_reflection_factor", updateParameter);
+   addInputEventListenerAndGetLabel ("ignition_time", updateParameter);
+   addInputEventListenerAndGetLabel ("straight_pipe_waveguide_length", updateParameter);
+   addInputEventListenerAndGetLabel ("straight_pipe_reflection_factor", updateParameter);
+//   addInputEventListenerAndGetLabel ("muffler_elements_length", updateParameter);
+   addInputEventListenerAndGetLabel ("action", updateParameter);
+   addInputEventListenerAndGetLabel ("outlet_waveguide_length", updateParameter);
+   addInputEventListenerAndGetLabel ("outlet_reflection_factor", updateParameter);
 
    window.onresize = function () {set_canvas_size()};
 
    window.moduleLoad();
+}
+
+function addInputEventListenerAndGetLabel (name, eventListener) {
+   let input = document.getElementById("input_"+name);
+   parameters[name] = input.value;
+   input.addEventListener("input", eventListener);
+   let label = document.getElementById("label_"+name);
+   let labelEntry = {"label": label, "defaultValue": label.innerHTML};
+   parameterLabels[name] = labelEntry;
+   labelEntry.label.innerHTML = labelEntry.defaultValue+" "+input.value;
+}
+
+function updateParameter (event) {
+   parameters[event.target.name] = event.target.value;
+   let labelEntry = parameterLabels[event.target.name];
+   labelEntry.label.innerHTML = labelEntry.defaultValue+" "+event.target.value;
 }
 
 function resize_canvas(width, height) {
@@ -322,7 +366,12 @@ function resize_canvas(width, height) {
 
 function set_canvas_size() {
    var width = Math.min (0.9*window.innerWidth, window.innerHeight*16/9)*0.5;
-   resize_canvas(width, screen.height/screen.width*width);
+   if (screen.height<screen.width) {
+      resize_canvas(width, 0.75*screen.height/screen.width*width);
+   }
+   else {
+      resize_canvas(0.9*window.innerWidth, 0.25*screen.height);
+   }
 }
 
 function updateSineWaveVolume (event) {
@@ -394,11 +443,25 @@ async function togglePlayCarEngineSound (button) {
    soundCarEngine.stop();
 }
 
+function updateParameters() {
+   let inputCarEngineVolume = document.getElementById("input_car_engine_volume");
+
+   let parameterNumbers = {};
+   for (const [key, value] of Object.entries(parameters)) {
+      parameterNumbers[key] = Number(value);
+   }
+   soundCarEngine.setParameters(parameterNumbers);
+}
+
 </script>
 
 </head>
 
 <body onload="init()">
+
+<h1>Engine Sound Generator</h1>
+
+An engine sound generator written in JavaScript and C++ using the Web Audio API <a href="https://github.com/Antonio-R1/engine-sound-generator">source</a></br></br>
 
 <fieldset>
 <legend>Object</legend>
@@ -407,8 +470,8 @@ async function togglePlayCarEngineSound (button) {
 <fieldset>
 <legend>Sine wave</legend>
 
-<input type="range" id="input_sine_wave_volume" name="input_sine_wave_volume" min="0" max="100" value="10"> <label for="input_sine_wave_volume" id="label_sine_wave_volume">Volume</label>
-<input type="range" id="input_sine_wave_frequency" name="input_sine_wave_frequency" min="20" max="20000" value="440"> <label for="input_sine_wave_frequency" id="label_sine_wave_frequency">Frequency</label>
+<div class="div_input"><input type="range" id="input_sine_wave_volume" name="input_sine_wave_volume" min="0" max="100" value="10"> <label for="input_sine_wave_volume" id="label_sine_wave_volume">Volume</label></div>
+<div class="div_input"><input type="range" id="input_sine_wave_frequency" name="input_sine_wave_frequency" min="20" max="20000" value="440"> <label for="input_sine_wave_frequency" id="label_sine_wave_frequency">Frequency</label></div>
 <input type="button" id="button_play_sine_wave_sound" onclick="togglePlaySineWaveSound(this)" value="play"></input>
 
 </fieldset>
@@ -416,15 +479,37 @@ async function togglePlayCarEngineSound (button) {
 <fieldset>
 <legend>Car engine</legend>
 
-<input type="range" id="input_car_engine_volume" name="input_car_engine_volume" min="0" max="100" value="10"> <label for="input_car_engine_volume" id="label_car_engine_volume">Volume</label>
-<input type="range" id="input_car_engine_volume_intake" name="input_car_engine_volume_intake" min="0" max="100" value="100"> <label for="input_car_engine_volume_intake" id="label_car_engine_volume_intake">Intake Volume</label>
-<input type="range" id="input_car_engine_volume_engine_block_vibrations" name="input_car_engine_volume_engine_block_vibrations" min="0" max="100" value="100"> <label for="input_car_engine_volume_engine_block_vibrations" id="label_car_engine_volume_engine_block_vibrations">Engine Block Vibration Volume</label>
-<input type="range" id="input_car_engine_volume_outlet" name="input_car_engine_volume_outlet" min="0" max="100" value="100"> <label for="input_car_engine_volume_outlet" id="label_car_engine_volume_outlet">Outlet Volume</label>
+<div class="div_input"><input type="range" id="input_car_engine_volume" name="input_car_engine_volume" min="0" max="100" value="10"> <label for="input_car_engine_volume" id="label_car_engine_volume">Volume</label></div>
+<div class="div_input"><input type="range" id="input_car_engine_volume_intake" name="input_car_engine_volume_intake" min="0" max="100" value="100"> <label for="input_car_engine_volume_intake" id="label_car_engine_volume_intake">Intake Volume</label></div>
+<div class="div_input"><input type="range" id="input_car_engine_volume_engine_block_vibrations" name="input_car_engine_volume_engine_block_vibrations" min="0" max="100" value="100"> <label for="input_car_engine_volume_engine_block_vibrations" id="label_car_engine_volume_engine_block_vibrations">Engine Block Vibration Volume</label></div>
+<div class="div_input"><input type="range" id="input_car_engine_volume_outlet" name="input_car_engine_volume_outlet" min="0" max="100" value="100"> <label for="input_car_engine_volume_outlet" id="label_car_engine_volume_outlet">Outlet Volume</label></div>
 
-<input type="range" id="input_car_engine_throttle" name="input_car_engine_throttle" min="0" max="100" value="0"> <label for="input_car_engine_throttle" id="label_car_engine_throttle">Throttle</label>
+<div class="div_input"><input type="range" id="input_car_engine_throttle" name="input_car_engine_throttle" min="0" max="100" value="0"> <label for="input_car_engine_throttle" id="label_car_engine_throttle">Throttle</label></div>
 <input type="button" id="button_car_engine_sound" onclick="togglePlayCarEngineSound(this)" value="play"></input>
-Rpm: <span id="span_car_engine_rpm">0</span>
 
+<div style="white-space: nowrap; display: inline-block;">Rpm: <span id="span_car_engine_rpm">0</span></div>
+<br>
+<br>
+ <details>
+  <summary>Other options</summary>
+
+   <div class="div_input"><input type="range" id="input_cylinder_count" name="cylinder_count" min="1" max="8" value="4"> <label for="cylinder_count" id="label_cylinder_count">Cylinders</label></div>
+   <div class="div_input"><input type="range" id="input_intake_waveguide_length" name="intake_waveguide_length" min="1" max="200" value="100"> <label for="intake_waveguide_length" id="label_intake_waveguide_length">Intake Waveguide Length</label></div>
+   <div class="div_input"><input type="range" id="input_exhaust_waveguide_length" name="exhaust_waveguide_length" min="1" max="200" value="100"> <label for="exhaust_waveguide_length" id="label_exhaust_waveguide_length">Exhaust Waveguide Length</label></div>
+   <div class="div_input"><input type="range" id="input_extractor_waveguide_length" name="extractor_waveguide_length" min="1" max="200" value="100"> <label for="cylinders" id="label_extractor_waveguide_length">Extractor Waveguide Length</label></div>
+   <div class="div_input"><input type="range" id="input_intake_open_reflection_factor" name="intake_open_reflection_factor" min="0" max="1" value="0.01" step="0.001"> <label for="intake_open_reflection_factor" id="label_intake_open_reflection_factor">Intake Open Reflection Factor</label></div>
+   <div class="div_input"><input type="range" id="input_intake_closed_reflection_factor" name="intake_closed_reflection_factor" min="0" max="1" value="0.95" step="0.01"> <label for="intake_closed_reflection_factor" id="label_intake_closed_reflection_factor">Intake Closed Reflection Factor</label></div>
+   <div class="div_input"><input type="range" id="input_exhaust_open_reflection_factor" name="exhaust_open_reflection_factor" min="0" max="1" value="0.01" step="0.001"> <label for="exhaust_open_reflection_factor" id="label_exhaust_open_reflection_factor">Exhaust Open Reflection Factor</label></div>
+   <div class="div_input"><input type="range" id="input_exhaust_closed_reflection_factor" name="exhaust_closed_reflection_factor" min="0" max="1" value="0.95" step="0.01"> <label for="exhaust_closed_reflection_factor" id="label_exhaust_closed_reflection_factor">Exhaust Closed Reflection Factor</label></div>
+   <div class="div_input"><input type="range" id="input_ignition_time" name="ignition_time" min="0.01" max="0.5" value="0.016" step="0.001"> <label for="ignition_time" id="label_ignition_time">Ignition Time</label></div>
+   <div class="div_input"><input type="range" id="input_straight_pipe_waveguide_length" name="straight_pipe_waveguide_length" min="1" max="500" value="128"> <label for="straight_pipe_waveguide_length" id="label_straight_pipe_waveguide_length">Straight Pipe Waveguide Length</label></div>
+   <div class="div_input"><input type="range" id="input_straight_pipe_reflection_factor" name="straight_pipe_reflection_factor" min="0" max="1" value="0.01" step=0.001> <label for="straight_pipe_reflection_factor" id="label_straight_pipe_reflection_factor">Straight Pipe Reflection Factor</label></div>
+<!--   <div class="div_input"><input type="range" id="input_muffler_elements_length" name="muffler_elements_length" min="0" max="100" value="10"> <label for="muffler_elements_length" id="label_muffler_elements_length">Muffler Elements Length</label></div>--!>
+   <div class="div_input"><input type="range" id="input_action" name="action" min="0" max="0.2" value="0.1" step="0.01"> <label for="action" id="label_action">Action</label></div>
+   <div class="div_input"><input type="range" id="input_outlet_waveguide_length" name="outlet_waveguide_length" min="0" max="100" value="5"> <label for="outlet_waveguide_length" id="label_outlet_waveguide_length">Outlet Waveguide Length</label></div>
+   <div class="div_input"><input type="range" id="input_outlet_reflection_factor" name="outlet_reflection_factor" min="0" max="1" value="0.01" step="0.001"> <label for="outlet_reflection_factor" id="label_outlet_reflection_factor">Outlet Reflection Factor</label></div>
+   <input type="button" onclick="updateParameters()" value="update"></input>
+ </details>
 </fieldset>
 
 <canvas id="canvas" style="display: block;" height="350px" width="750px"></canvas>
