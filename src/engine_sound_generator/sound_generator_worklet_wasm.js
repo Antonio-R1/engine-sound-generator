@@ -52,12 +52,25 @@ class SoundGenerator extends THREE.PositionalAudio {
 
    _setNodeSources(audioNodeArray) {
 
-      for (let i=0; i<audioNodeArray.length; i++) {
-         audioNodeArray[i].connect (this.delayNode);
+      if (!this.clamp) {
+         for (let i=0; i<audioNodeArray.length; i++) {
+            audioNodeArray[i].connect (this.delayNode);
+         }
+         this.hasPlaybackControl = false;
+         this.sourceType = 'audioNode';
+         this.source = this.delayNode;
       }
-      this.hasPlaybackControl = false;
-      this.sourceType = 'audioNode';
-      this.source = this.delayNode;
+      else {
+         let waveShaper = this.context.createWaveShaper();
+         waveShaper.connect (this.delayNode);
+         waveShaper.curve = new Float32Array([-1, 0, 1]);
+         for (let i=0; i<audioNodeArray.length; i++) {
+            audioNodeArray[i].connect (waveShaper);
+         }
+         this.hasPlaybackControl = false;
+         this.sourceType = 'audioNode';
+         this.source = this.delayNode;
+      }
 
    }
 
@@ -137,15 +150,17 @@ class SineWaveSoundGenerator extends SoundGenerator {
    }
 
    static load (loadingManager, listener, basePath="") {
-      SoundGenerator._load(loadingManager, listener, basePath+"/sine_wave_sound_generator_worklet_wasm.js");
+      SoundGenerator._load(loadingManager, listener, basePath+"/sound_generator_wasm/sine_wave_sound_generator_worklet_webassembly.js");
    }
 
 }
 
 class EngineSoundGenerator extends SoundGenerator {
 
-   constructor ({listener, parameters}) {
+   constructor ({listener, parameters, clamp=false}) {
       super (listener);
+
+      this.clamp = clamp;
 
       this.gainIntake = this.context.createGain();
       this.gainIntake.gain.value = 1.0;
@@ -167,21 +182,21 @@ class EngineSoundGenerator extends SoundGenerator {
        exhaustWaveguideLength: 100,
        extractorWaveguideLength: 100,
 
-       intakeOpenReflectionFactor: 0.25,
+       intakeOpenReflectionFactor: 0.01,
        intakeClosedReflectionFactor: 0.95,
 
-       exhaustOpenReflectionFactor: 0.25,
+       exhaustOpenReflectionFactor: 0.01,
        exhaustClosedReflectionFactor: 0.95,
        ignitionTime: 0.016,
 
        straightPipeWaveguideLength: 128,
-       straightPipeReflectionFactor: 0.1,
+       straightPipeReflectionFactor: 0.01,
 
        mufflerElementsLength: [10, 15, 20, 25],
-       action: 0.25,
+       action: 0.1,
 
        outletWaveguideLength: 5,
-       outletReflectionFactor: 0.1}
+       outletReflectionFactor: 0.01}
    */
    setParameters (parameters) {
       this.worklet.port.postMessage(parameters);
@@ -196,7 +211,7 @@ class EngineSoundGenerator extends SoundGenerator {
    }
 
    static load (loadingManager, listener, basePath="") {
-      SoundGenerator._load(loadingManager, listener, basePath+"/engine_sound_generator_worklet_wasm.js");
+      SoundGenerator._load(loadingManager, listener, basePath+"/sound_generator_wasm/engine_sound_generator_worklet_webassembly.js");
    }
 
 }

@@ -210,6 +210,7 @@ class EngineSoundGenerator {
    std::vector<Cylinder> cylinders;
    unsigned int cylinderCount;
    float cylindersCountInverse;
+   float cylindersFactor;
    Waveguide straightPipe;
    Muffler muffler;
    Waveguide outlet;
@@ -275,6 +276,7 @@ class EngineSoundGenerator {
       this->cylinders.clear();
       this->cylinderCount = cylinderCount;
       this->cylindersCountInverse = 1.0/cylinderCount;
+      this->cylindersFactor = 4.0*this->cylindersCountInverse;
 
       for  (unsigned int i=0; i<cylinderCount; i++) {
          Cylinder cylinder = Cylinder(i,
@@ -302,7 +304,12 @@ class EngineSoundGenerator {
       for (unsigned int i=0; i<this->cylinderCount; i++) {
          float x = this->currentRevolution+i*(this->cylindersCountInverse+crankshaftValue);
          this->cylinders[i].update(intakeNoise, this->straightPipe.outputLeft, x-(long long)x);
-         this->sound[index] += this->cylinders[i].cylinderWaveguide.outputLeft;
+         if (this->cylinderCount<=4) {
+            this->sound[index] += this->cylinders[i].cylinderWaveguide.outputLeft;
+         }
+         else {
+            this->sound[index] += this->cylindersFactor*this->cylinders[i].cylinderWaveguide.outputLeft;
+         }
       }
       this->currentRevolution += this->secondsPerSample*this->rpm/120.0;
       if (this->currentRevolution > 1.0) {
@@ -311,13 +318,23 @@ class EngineSoundGenerator {
 
       this->intakeSound[index] = 0;
       for (unsigned int i=0; i<this->cylinderCount; i++) {
-         this->intakeSound[index] += this->cylinders[i].intakeWaveguide.outputLeft;
+         if (this->cylinderCount<=4) {
+            this->intakeSound[index] += this->cylinders[i].intakeWaveguide.outputLeft;
+         }
+         else {
+            this->intakeSound[index] += this->cylindersFactor*this->cylinders[i].intakeWaveguide.outputLeft;
+         }
       }
 
       float straightPipeInput = 0.0;
 
       for (unsigned int i=0; i<this->cylinderCount; i++) {
-         straightPipeInput += this->cylinders[i].extractorWaveguide.outputRight;
+         if (this->cylinderCount<=4) {
+            straightPipeInput += this->cylinders[i].extractorWaveguide.outputRight;
+         }
+         else {
+            straightPipeInput += this->cylindersFactor*this->cylinders[i].extractorWaveguide.outputRight;
+         }
       }
 
       this->straightPipe.add (straightPipeInput, this->muffler.outputLeft);
