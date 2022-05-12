@@ -69,6 +69,7 @@ The value of the rpm paremeter can be set in the following way:
 
 ### Wasm version
 <http://antonio-r1.github.io/engine-sound-generator/src/engine_sound_generator/sounds_worklet_wasm.htm>
+
 The second attempt has also been ported to C++ and compiled with Emscripten to WebAssembly for making
 the sound generator more efficient and removing the glitches. It can be built by activating the environment
 variables of Emscripten and running `make` in the `sound_generator_wasm` folder.
