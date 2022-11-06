@@ -1,7 +1,7 @@
 
 /*
  * Copyright (c) 2021-2022 Antonio-R1
- * License: MIT
+ * License: https://github.com/Antonio-R1/engine-sound-generator/blob/main/LICENSE | MIT
  */
 
 import SoundGeneratorWasm from './sound_generator_wasm/engine_sound_generator_webassembly.js'
