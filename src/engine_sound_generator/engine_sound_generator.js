@@ -152,6 +152,7 @@ class Muffler {
     */
    update (mufflerInput, outletValue) {
       mufflerInput = this.elementsCountInverse*mufflerInput;
+      outletValue = this.elementsCountInverse*outletValue;
       this.outputLeft = 0.0;
       this.outputRight = 0.0;
       for (let i=0; i<this.elementsCount; i++) {

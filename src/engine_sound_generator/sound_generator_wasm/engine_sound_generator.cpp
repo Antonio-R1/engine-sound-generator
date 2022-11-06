@@ -182,6 +182,7 @@ class Muffler {
 
    void update (float mufflerInput, float outletValue) {
       mufflerInput = this->elementsCountInverse*mufflerInput;
+      outletValue = this->elementsCountInverse*outletValue;
       this->outputLeft = 0.0;
       this->outputRight = 0.0;
       for (unsigned int i=0; i<this->elementsCount; i++) {

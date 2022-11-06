@@ -128,9 +128,23 @@ class SoundGenerator extends THREE.PositionalAudio {
          return;
       }
 
-      this.delayNode.delayTime.linearRampToValueAtTime(distanceToListener/SPEED_OF_SOUND, this.context.currentTime+dt);
+      if (!this.needsReset) {
+         this.delayNode.delayTime.linearRampToValueAtTime(distanceToListener/SPEED_OF_SOUND, this.context.currentTime+dt);
+      }
+      else {
+         this.lastTimeUpdated = this.context.currentTime;
+         this.delayNode.delayTime.value = distanceToListener/SPEED_OF_SOUND;
+         this.needsReset = false;
+      }
 
       this.lastTimeUpdated = this.context.currentTime;
+   }
+
+   /*
+    * set the value of "delayTime" with "value" instead of with "linearRampToValueAtTime"
+    */
+   reset () {
+      this.needsReset = true;
    }
 
 }
