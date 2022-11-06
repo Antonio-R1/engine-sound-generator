@@ -20,7 +20,13 @@ and also the algorithm for the Doppler effect has been improved compared to the 
 
 ### Usage
 
-First the module needs to be loaded:
+First of all, we have to import the modules:
+
+```javascript
+import {SoundGeneratorAudioListener, SineWaveSoundGenerator, EngineSoundGenerator} from './sound_generator_worklet.js';
+```
+
+Then, the module used by the worklet needs to be loaded:
 
 ```javascript
    var loadingManager = new THREE.LoadingManager();
@@ -73,8 +79,12 @@ The value of the rpm paremeter can be set in the following way:
 The second attempt has also been ported to C++ and compiled with Emscripten to WebAssembly for making
 the sound generator more efficient and removing the glitches. It can be built by activating the environment
 variables of Emscripten and running `make` in the `sound_generator_wasm` folder.
-This version can be used like the JavaScript version as described above.
+This version can be used like the JavaScript version as described above, only the modules have to be imported from a different file:
+
+```javascript
+import {SoundGeneratorAudioListener, SineWaveSoundGenerator, EngineSoundGenerator} from './sound_generator_worklet_wasm.js';
+```
 
 ## Third party software used / References
 - [Three.js](https://github.com/mrdoob/three.js)
-- <a id="1">[1]</a>  Baldan, Stefano & Lachambre, Helene & Delle Monache, Stefano & Boussard, Patrick. (2015). Physically informed car engine sound synthesis for virtual and augmented environments. 10.1109/SIVE.2015.7361287. 
+- <a id="1">[1]</a>  Baldan, Stefano & Lachambre, Helene & Delle Monache, Stefano & Boussard, Patrick. (2015). Physically informed car engine sound synthesis for virtual and augmented environments. 10.1109/SIVE.2015.7361287.
